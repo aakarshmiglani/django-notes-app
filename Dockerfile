@@ -1,20 +1,24 @@
-FROM python:3.9
+FROM python:3.9-bullseye
 
 WORKDIR /app/backend
 
-COPY requirements.txt /app/backend
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y gcc default-libmysqlclient-dev pkg-config \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy only requirements first (for caching)
+COPY requirements.txt .
 
-# Install app dependencies
-RUN pip install mysqlclient
+# Install Python deps
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app/backend
+# Copy app source
+COPY . .
 
 EXPOSE 8000
-#RUN python manage.py migrate
-#RUN python manage.py makemigrations
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
